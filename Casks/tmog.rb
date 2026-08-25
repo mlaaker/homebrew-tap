@@ -7,7 +7,14 @@ cask "tmog" do
   desc "Systems console from the original Windows Task Manager developer"
   homepage "https://tmog.org/"
 
+  livecheck do
+    url "https://tmog.org/downloads/release.json"
+    strategy :json do |json|
+      next if json["version"].blank? || json["build"].blank?
 
+      "#{json["version"]},#{json["build"]}"
+    end
+  end
 
   app "Task Manager TMOG.app"
 
