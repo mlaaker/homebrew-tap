@@ -23,5 +23,5 @@ fi
 echo "Hash verified against downloaded file."
 
 /usr/bin/sed -i '' "s|^  version .*|  version \"$NEW\"|; s|^  sha256 .*|  sha256 \"$SHA\"|" "$CASK"
-brew audit --cask --strict --online "$CASK"
+brew style mlaaker/tap && brew audit --cask --strict --online "$CASK"
 echo "Cask updated. Review, then: cd \"\$(brew --repository mlaaker/tap)\" && git commit -am 'tmog $NEW' && git push && brew upgrade --cask tmog"
