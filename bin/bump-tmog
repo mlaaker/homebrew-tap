@@ -1,0 +1,27 @@
+#!/bin/bash
+set -euo pipefail
+CASK="$(brew --repository mlaaker/tap)/Casks/tmog.rb"
+JSON=$(curl -fsS https://tmog.org/downloads/release.json)
+
+VER=$(echo "$JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin)["version"])')
+BUILD=$(echo "$JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin)["build"])')
+SHA=$(echo "$JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin)["sha256"])')
+NEW="$VER,$BUILD"
+
+CUR=$(grep -m1 '^  version' "$CASK" | cut -d'"' -f2)
+if [ "$CUR" = "$NEW" ]; then echo "Already at $CUR — nothing to do."; exit 0; fi
+echo "$CUR  ->  $NEW"
+
+# Verify the published hash against the real file before trusting it
+TMP=$(mktemp -d)
+curl -fsSL -o "$TMP/tmog.dmg" "https://tmog.org/downloads/TMOG-Task-Manager-$VER-$BUILD-macOS-universal.dmg"
+ACTUAL=$(shasum -a 256 "$TMP/tmog.dmg" | awk '{print $1}')
+rm -rf "$TMP"
+if [ "$ACTUAL" != "$SHA" ]; then
+  echo "HASH MISMATCH — manifest says $SHA, file is $ACTUAL. Aborting."; exit 1
+fi
+echo "Hash verified against downloaded file."
+
+/usr/bin/sed -i '' "s|^  version .*|  version \"$NEW\"|; s|^  sha256 .*|  sha256 \"$SHA\"|" "$CASK"
+brew audit --cask --strict --online "$CASK"
+echo "Cask updated. Review, then: cd \"\$(brew --repository mlaaker/tap)\" && git commit -am 'tmog $NEW' && git push && brew upgrade --cask tmog"
