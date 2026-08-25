@@ -16,6 +16,8 @@ cask "tmog" do
     end
   end
 
+  depends_on macos: :ventura
+
   app "Task Manager TMOG.app"
 
   uninstall quit: "com.tmog.taskmanager"
